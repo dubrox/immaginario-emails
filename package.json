@@ -1,0 +1,39 @@
+{
+  "name": "immaginario-emails",
+  "version": "1.0.0",
+  "description": "An email parsing desktop application built with Electron and TypeScript.",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "webpack && electron .",
+    "build": "webpack",
+    "dist": "npm run build && electron-builder"
+  },
+  "author": "dubrox + chatGPT",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^25.3.0",
+    "electron-builder": "^24.6.0",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.2.2",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "build": {
+    "appId": "com.dubrox.immaginario-emails",
+    "productName": "Email Parser App",
+    "files": [
+      "dist/**/*",
+      "src/index.html"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    }
+  }
+}
