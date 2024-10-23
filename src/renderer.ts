@@ -7,11 +7,20 @@ const statusText = document.getElementById('status-text') as HTMLDivElement;
 
 const { ipcRenderer, clipboard } = require('electron');
 
+function toggleButtons(isListValidated: boolean) {
+  copyButton.disabled = !isListValidated;
+  saveButton.disabled = !isListValidated;
+  parseButton.disabled = isListValidated;
+}
+
+emailInput.addEventListener('input', () => {
+  toggleButtons(false);
+});
+
 parseButton.addEventListener('click', () => {
   const rawText = emailInput.value;
   const emails = splitEmails(rawText);
 
-  // Explicitly specify the type of the arrays
   const invalidEmails: string[] = [];
   const validEmails: string[] = [];
 
@@ -24,7 +33,7 @@ parseButton.addEventListener('click', () => {
   });
 
   if (invalidEmails.length > 0) {
-    statusText.innerHTML = `I seguenti indirizzi sono da correggere:<br>${invalidEmails
+    statusText.innerHTML = `I seguenti ${invalidEmails.length} indirizzi sono da correggere:<br>${invalidEmails
       .map(
         (email) =>
           `<a href="#" class="invalid-email">${escapeHtml(email)}</a>`
@@ -34,13 +43,13 @@ parseButton.addEventListener('click', () => {
     saveButton.disabled = true;
     addInvalidEmailClickHandlers(invalidEmails);
   } else {
-    // No invalid emails, proceed to remove duplicates and sort
-    const uniqueEmails = Array.from(new Set(validEmails));
+    // No invalid emails, proceed to normalize, remove duplicates, and sort
+    const normalizedEmails = normalizeEmails(validEmails);
+    const uniqueEmails = Array.from(new Set(normalizedEmails));
     uniqueEmails.sort();
     emailInput.value = uniqueEmails.join(',\n');
-    statusText.innerText = 'Tutte le email sono valide, eventuali duplicati sono stati rimossi, e la lista è stata ordinata alfabeticamente.';
-    copyButton.disabled = false;
-    saveButton.disabled = false;
+    statusText.innerText = `Tutte le ${uniqueEmails.length} email sono valide, eventuali duplicati sono stati rimossi, e la lista è stata ordinata alfabeticamente.`;
+    toggleButtons(true);
   }
 });
 
@@ -62,6 +71,7 @@ loadButton.addEventListener('click', async () => {
   if (result.success) {
     emailInput.value = result.data;
     statusText.innerText = 'Lista caricata.';
+    toggleButtons(false);
   }
 });
 
@@ -74,9 +84,27 @@ function splitEmails(text: string): string[] {
 }
 
 function validateEmail(email: string): boolean {
-  // Regex to validate emails with optional display names and angle brackets
-  const emailRegex = /^((?:"[^"]+"|[^",\s<>]+)\s*<\s*)?[^@<\s]+@[^@<\s]+\.[^@<\s]+(\s*>)?$/;
+  // Regex to validate emails with optional display names
+  const emailRegex = /^((.+?)\s*<?\s*)?([^\s@<>]+@[^\s@<>]+)>?\s*$/;
   return emailRegex.test(email);
+}
+
+function normalizeEmails(emails: string[]): string[] {
+  return emails.map((email) => {
+    const match = email.match(/^("?([^"]+)"?\s+<?)?([^\s@<>]+@[^\s@<>]+)>?\s*$/);
+    if (match) {
+      let label = match[2] ? match[2].trim() : '';
+      let address = match[3].trim();
+
+      // If the label is empty or the same as the address, use the address as the label
+      if (!label || label === address) {
+        return address;
+      }
+
+      return `"${label}" <${address}>`;
+    }
+    return email; // Return as-is if it doesn't match (shouldn't happen since emails are validated)
+  });
 }
 
 function addInvalidEmailClickHandlers(invalidEmails: string[]) {
@@ -95,9 +123,7 @@ function highlightEmailInTextarea(email: string) {
   if (startIndex !== -1) {
     emailInput.focus();
     emailInput.setSelectionRange(startIndex, startIndex + email.length);
-    const lineHeight = 16; // Adjust this value based on your font size
-    const lineNumber = text.substr(0, startIndex).split('\n').length - 1;
-    emailInput.scrollTop = lineNumber * lineHeight;
+    emailInput.scrollTop = emailInput.scrollHeight * (startIndex / text.length);
   }
 }
 
