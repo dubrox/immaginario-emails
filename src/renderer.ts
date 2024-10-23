@@ -91,7 +91,7 @@ function validateEmail(email: string): boolean {
 
 function normalizeEmails(emails: string[]): string[] {
   return emails.map((email) => {
-    const match = email.match(/^("?([^"]+)"?\s+<?)?([^\s@<>]+@[^\s@<>]+)>?\s*$/);
+    const match = email.match(/^("?([^"]+)"?\s+)?<?([^\s@<>]+@[^\s@<>]+)>?\s*$/);
     if (match) {
       let label = match[2] ? match[2].trim() : '';
       let address = match[3].trim();

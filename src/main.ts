@@ -1,8 +1,11 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import contextMenu from 'electron-context-menu';
 import * as fs from 'fs';
 import * as path from 'path';
 
 let mainWindow: BrowserWindow;
+let lastUsedFilename = 'lista_email.txt';
+const systemLocale = app.getLocale();
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -15,14 +18,29 @@ function createWindow() {
   });
 
   mainWindow.loadFile('src/index.html');
+
+  app.on('browser-window-created', () => {
+    mainWindow.webContents.on('did-finish-load', () => {
+      mainWindow.webContents.send('set-locale', systemLocale);
+    });
+  });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+
+  // Set up the context menu
+  contextMenu({
+    window: mainWindow,
+    showSaveImageAs: false,
+    showInspectElement: false,
+  });
+});
 
 ipcMain.handle('save-file', async (event, data) => {
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
     title: 'Salva su file',
-    defaultPath: 'lista_email.txt',
+    defaultPath: lastUsedFilename,
     filters: [{ name: 'Text Files', extensions: ['txt'] }]
   });
 
@@ -37,11 +55,21 @@ ipcMain.handle('load-file', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
     title: 'Carica da file',
     filters: [{ name: 'Text Files', extensions: ['txt'] }],
-    properties: ['openFile']
+    properties: ['openFile', 'multiSelections'],
   });
 
   if (!canceled && filePaths.length > 0) {
-    const data = fs.readFileSync(filePaths[0], 'utf-8');
+    let data = '';
+    for (const filePath of filePaths) {
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === '.txt') {
+        lastUsedFilename = path.basename(filePath);
+        data += fs.readFileSync(filePath, 'utf-8') + '\n\n\n';
+      } else {
+        // Unsupported file type
+        continue;
+      }
+    }
     return { success: true, data };
   }
   return { success: false };
