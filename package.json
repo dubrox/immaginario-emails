@@ -1,12 +1,13 @@
 {
   "name": "immaginario-emails",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Email parsing desktop application built with Electron and TypeScript.",
   "main": "dist/main.js",
   "scripts": {
     "start": "webpack && electron .",
     "build": "webpack",
-    "dist": "npm run build && electron-builder"
+    "clean": "rimraf dist",
+    "dist": "npm run clean && npm run build && electron-builder"
   },
   "author": "dubrox",
   "license": "MIT",
@@ -14,6 +15,7 @@
     "electron": "^25.3.0",
     "electron-builder": "^24.6.0",
     "electron-context-menu": "^4.0.4",
+    "rimraf": "^6.0.1",
     "ts-loader": "^9.4.4",
     "typescript": "^5.2.2",
     "webpack": "^5.88.2",

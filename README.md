@@ -17,3 +17,7 @@ npm install
 npm start
 npm run dist
 ```
+
+# Cretits
+
+App icon by [Nagarjan S](https://iconscout.com/contributors/serpenttina).
